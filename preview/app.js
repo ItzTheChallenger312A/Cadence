@@ -83,6 +83,8 @@ const DEFAULTS = {
   waveExpScale: 1.6,
   waveStrokeWidth: 2.5,
   wavePoints: 128,
+  waveTrail: true,
+  waveDualTrace: false,
   scopeSharpness: 1.0,
   scopeThickness: 1.4,
   scopeSensitivity: 1.0,
@@ -303,6 +305,7 @@ let useMap1 = true;
 let smoothedHistory = [];
 let scopePrevY = new Float32Array(240);
 let scopePrevPts = null;
+let wavePrevPts = null;
 let scopePhase = 0;
 let peakHold = new Float32Array(128);
 let overlayParticles = Array.from({ length: 28 }, (_, i) => ({
@@ -334,8 +337,16 @@ const settingsPanel = document.getElementById("settingsPanel");
 const togglePanelBtn = document.getElementById("togglePanelBtn");
 
 function hexToRgbTuple(hex) {
-  const clean = hex.replace("#", "");
+  if (!hex) return "255,255,255";
+  const str = String(hex).trim();
+  const rgbMatch = str.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/i);
+  if (rgbMatch) {
+    return `${Math.round(Number(rgbMatch[1]))},${Math.round(Number(rgbMatch[2]))},${Math.round(Number(rgbMatch[3]))}`;
+  }
+  if (/^\d+\s*,\s*\d+\s*,\s*\d+$/.test(str)) return str.replace(/\s+/g, "");
+  const clean = str.replace("#", "");
   const n = parseInt(clean, 16);
+  if (Number.isNaN(n)) return "255,255,255";
   return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
 }
 
@@ -1215,6 +1226,45 @@ function renderFrame(nowMs) {
       ctx.restore();
     }
 
+    if (state.waveTrail && wavePrevPts && wavePrevPts.length === pts.length) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(0, wavePrevPts[0].cy);
+      for (let i = 0; i < wavePrevPts.length; i++) {
+        ctx.quadraticCurveTo(wavePrevPts[i].cx, wavePrevPts[i].cy, wavePrevPts[i].xEnd, wavePrevPts[i].yEnd);
+      }
+      ctx.strokeStyle = waveGrad;
+      ctx.globalAlpha = 0.28;
+      ctx.lineWidth = state.waveStrokeWidth * scale;
+      ctx.lineCap = "round";
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (state.waveDualTrace) {
+      let dyNext = mapRange(-waveBuf[0] * 0.85, -tScale, tScale, centerY + amp, centerY - amp);
+      const dPts = [];
+      for (let i = 0; i < nPts; i++) {
+        const xEnd = mapRange(i, 0, nPts - 1, 0, skinW);
+        const yVal = dyNext;
+        const nextIdx = clamp(i + 1, 0, nPts - 1);
+        dyNext = mapRange(-waveBuf[nextIdx] * 0.85, -tScale, tScale, centerY + amp, centerY - amp);
+        dPts.push({ xEnd, yEnd: (yVal + dyNext) * 0.5, cx: xEnd - stepX * 0.5, cy: yVal });
+      }
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(0, dPts[0].cy);
+      for (let i = 0; i < dPts.length; i++) {
+        ctx.quadraticCurveTo(dPts[i].cx, dPts[i].cy, dPts[i].xEnd, dPts[i].yEnd);
+      }
+      ctx.strokeStyle = waveGrad;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = state.waveStrokeWidth * 0.8 * scale;
+      ctx.lineCap = "round";
+      ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(0, pts[0].cy);
@@ -1231,6 +1281,7 @@ function renderFrame(nowMs) {
     ctx.lineCap = "round";
     ctx.stroke();
     ctx.restore();
+    wavePrevPts = pts;
   }
 
   // Advance playback progress for both visualizer bar and Music Player
@@ -1389,6 +1440,8 @@ WaveScale=${state.waveScale}
 WaveExpScale=${state.waveExpScale.toFixed(1)}
 WaveStrokeWidth=${state.waveStrokeWidth.toFixed(1)}
 WaveFill=${state.waveFill ? 1 : 0}
+WaveTrail=${state.waveTrail ? 1 : 0}
+WaveDualTrace=${state.waveDualTrace ? 1 : 0}
 ScopeSharpness=${state.scopeSharpness.toFixed(1)}
 ScopeThickness=${state.scopeThickness.toFixed(1)}
 ScopeSensitivity=${state.scopeSensitivity.toFixed(1)}
@@ -3369,6 +3422,8 @@ function initUI() {
   bindCheckbox("invertVisualizer", "invertVisualizer");
   bindCheckbox("waveEnabled", "waveEnabled");
   bindCheckbox("waveFill", "waveFill");
+  bindCheckbox("waveTrail", "waveTrail");
+  bindCheckbox("waveDualTrace", "waveDualTrace");
   bindCheckbox("scopeTrail", "scopeTrail");
   bindCheckbox("scopeEdgeTaper", "scopeEdgeTaper");
   bindCheckbox("scopeDualTrace", "scopeDualTrace");

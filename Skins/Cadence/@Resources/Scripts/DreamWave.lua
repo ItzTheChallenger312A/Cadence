@@ -134,6 +134,9 @@ function Initialize()
 	tC.Spread = math.max(1.5, math.abs(SKIN:ParseFormula(SKIN:GetVariable("WaveSpread", "8"))))
 	tC.Scale = math.max(1.0, math.abs(SKIN:ParseFormula(SKIN:GetVariable("WaveScale", "7"))))
 	tC.Fill = math.floor(SKIN:ParseFormula(SKIN:GetVariable("WaveFill", "1"))) > 0
+	tC.WaveTrail = math.floor(SKIN:ParseFormula(SKIN:GetVariable("WaveTrail", "1"))) == 1
+	tC.WaveDualTrace = math.floor(SKIN:ParseFormula(SKIN:GetVariable("WaveDualTrace", "0"))) == 1
+	tC.WavePrevPath = nil
 	tC.FillY = (mirrorMode == 1) and (barHeight * 0.5) or barHeight
 	tC.BarStyle = math.floor(SKIN:ParseFormula(SKIN:GetVariable("BarStyle", "0")))
 	tC.VisMode = visMode
@@ -468,6 +471,9 @@ function Update()
 	local isMuted = (autoMute == 1) and stateMeasure and (stateMeasure:GetValue() ~= 1)
 
 	tC.LayerPhase = (tC.LayerPhase or 0) + 0.08
+	tC.Color1 = SKIN:GetVariable("ActiveColor1", tC.Color1 or "135,133,254")
+	tC.Color2 = SKIN:GetVariable("ActiveColor2", tC.Color2 or "199,154,224")
+	tC.Color3 = SKIN:GetVariable("ActiveColor3", tC.Color3 or "253,172,199")
 	if tC.BassAuraLayer then updateBassAuraLayer(isMuted) end
 	if tC.RibbonLayer then updateRibbonLayer(isMuted) end
 	if tC.SpheresLayer then updateSpheresLayer(isMuted) end
@@ -520,6 +526,18 @@ function Update()
 
 	local stepX = tC.Width / math.max(1, nPoints - 1)
 	local strokePath = toCurve(dest, 0, tC.CenterY, tC.Amp, stepX, -tC.Scale, false)
+	if tC.WaveTrail and tC.WavePrevPath then
+		SKIN:Bang("!SetOption", "MeterWaterWaveTrail", "WaterTrailPath", tC.WavePrevPath)
+	end
+	tC.WavePrevPath = strokePath
+	if tC.WaveDualTrace then
+		local dualDest = {}
+		for i = 1, nPoints do
+			dualDest[i] = -dest[i] * 0.85
+		end
+		local dualPath = toCurve(dualDest, 0, tC.CenterY, tC.Amp, stepX, -tC.Scale, false)
+		SKIN:Bang("!SetOption", "MeterWaterWaveDual", "WaterDualPath", dualPath)
+	end
 	SKIN:Bang("!SetOption", "MeterWaveBar", "WavePath", strokePath)
 	if tC.Fill then
 		local fillPath = toCurve(dest, 0, tC.CenterY, tC.Amp, stepX, -tC.Scale, true)

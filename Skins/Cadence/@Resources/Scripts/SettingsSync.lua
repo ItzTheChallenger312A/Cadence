@@ -92,6 +92,8 @@ function Initialize()
 	-- WavePhysics
 	setToggle("MeterToggleWave", "WaveEnabled")
 	setToggle("MeterToggleWaveFill", "WaveFill")
+	setToggle("MeterToggleWaveTrail", "WaveTrail")
+	setToggle("MeterToggleWaveDual", "WaveDualTrace")
 
 	-- WMP Scope
 	setToggle("MeterToggleScopeTrail", "ScopeTrail")
