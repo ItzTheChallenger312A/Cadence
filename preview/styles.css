@@ -179,15 +179,15 @@ body {
 }
 
 .desktop-stage[data-wallpaper="obsidian"] {
-  background: radial-gradient(circle at 25% 20%, #1c222d 0%, #0e1015 65%, #090b0f 100%);
+  background-image: radial-gradient(circle at 25% 20%, #1c222d 0%, #0e1015 65%, #090b0f 100%);
 }
 
 .desktop-stage[data-wallpaper="dusk"] {
-  background: linear-gradient(135deg, #1b1829 0%, #2d2036 48%, #3c2635 100%);
+  background-image: linear-gradient(135deg, #1b1829 0%, #2d2036 48%, #3c2635 100%);
 }
 
 .desktop-stage[data-wallpaper="paper"] {
-  background: linear-gradient(160deg, #e7e4de 0%, #d4d7de 55%, #c7cdd8 100%);
+  background-image: linear-gradient(160deg, #e7e4de 0%, #d4d7de 55%, #c7cdd8 100%);
 }
 
 .wallpaper-overlay {

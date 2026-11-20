@@ -292,6 +292,9 @@ let synthTimer = null;
 let audioEl = null;
 let mediaSourceNode = null;
 let usingRealAudio = false;
+let customTracks = [];
+let customTrackIdx = -1;
+let customWallpaperUrl = null;
 
 // Wave & smoothing buffers
 let waveMap1 = new Float32Array(256);
@@ -1525,6 +1528,11 @@ function togglePlayPause() {
 }
 
 function stepTrack(delta = 1) {
+  if (customTracks.length > 0) {
+    customTrackIdx = (customTrackIdx + delta + customTracks.length) % customTracks.length;
+    playCustomTrack(customTrackIdx);
+    return;
+  }
   genreIdx = (genreIdx + delta + GENRES.length) % GENRES.length;
   const g = GENRES[genreIdx];
   if (audioEl && !audioEl.paused) {
@@ -2842,6 +2850,23 @@ function initUI() {
   });
 
   // Wallpaper switcher & upload
+  const applyCustomWallpaper = (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    if (customWallpaperUrl) {
+      try { URL.revokeObjectURL(customWallpaperUrl); } catch {}
+    }
+    customWallpaperUrl = URL.createObjectURL(file);
+    document.querySelectorAll(".wallpaper-pills .pill-btn").forEach((b) => b.classList.remove("is-active"));
+    const uploadPill = document.querySelector(".wallpaper-pills .upload-pill");
+    if (uploadPill) uploadPill.classList.add("is-active");
+    desktopStage.removeAttribute("data-wallpaper");
+    desktopStage.style.backgroundImage = `url("${customWallpaperUrl}")`;
+    desktopStage.style.backgroundSize = "cover";
+    desktopStage.style.backgroundPosition = "center";
+    renderWeather();
+    renderDock();
+  };
+
   document.querySelectorAll(".wallpaper-pills .pill-btn[data-wp]").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".wallpaper-pills .pill-btn").forEach((b) => b.classList.remove("is-active"));
@@ -2854,11 +2879,9 @@ function initUI() {
   });
 
   document.getElementById("wallpaperUpload").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    desktopStage.removeAttribute("data-wallpaper");
-    desktopStage.style.backgroundImage = `url("${url}")`;
+    const file = e.target.files && e.target.files[0];
+    applyCustomWallpaper(file);
+    e.target.value = "";
   });
 
   // Mode cards
@@ -3563,16 +3586,23 @@ function initUI() {
     else startSynth();
   });
 
-  document.getElementById("audioUpload").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  window.playCustomTrack = async (idx) => {
+    const item = customTracks[idx];
+    if (!item) return;
     stopSynth();
     ensureAudioContext();
+    if (audioCtx && audioCtx.state === "suspended") {
+      try { await audioCtx.resume(); } catch {}
+    }
+    if (mediaSourceNode) {
+      try { mediaSourceNode.disconnect(); } catch {}
+      mediaSourceNode = null;
+    }
     if (audioEl) {
       audioEl.pause();
       audioEl.src = "";
     }
-    audioEl = new Audio(URL.createObjectURL(file));
+    audioEl = new Audio(item.url);
     audioEl.crossOrigin = "anonymous";
     mediaSourceNode = audioCtx.createMediaElementSource(audioEl);
     mediaSourceNode.connect(analyser);
@@ -3580,29 +3610,69 @@ function initUI() {
     isMediaPlaying = true;
     trackProgress = 0;
     currentTrack = {
-      genre: "LOCAL FILE",
-      title: file.name.replace(/\.[^.]+$/, ""),
+      genre: customTracks.length > 1 ? `TRACK ${idx + 1}/${customTracks.length}` : "LOCAL FILE",
+      title: item.title,
       artist: "Local Audio File · Live FFT",
-      durationSec: 210,
+      durationSec: item.durationSec || 210,
       coverColors: [state.color1, state.color3],
       isCustomFile: true,
     };
-    document.getElementById("mediaGenreTag").textContent = "LOCAL FILE";
-    document.getElementById("playPauseLabel").textContent = "Pause";
+    document.getElementById("mediaGenreTag").textContent = currentTrack.genre;
+    document.getElementById("playPauseLabel").textContent = t("Pause");
     audioEl.addEventListener("loadedmetadata", () => {
       if (Number.isFinite(audioEl.duration) && audioEl.duration > 0) {
-        currentTrack.durationSec = Math.round(audioEl.duration);
+        item.durationSec = Math.round(audioEl.duration);
+        currentTrack.durationSec = item.durationSec;
         renderPlayer();
       }
     });
     audioEl.addEventListener("ended", () => {
-      trackProgress = 1;
-      isMediaPlaying = false;
-      document.getElementById("playPauseLabel").textContent = "Play";
-      renderPlayer();
+      if (customTracks.length > 1) {
+        stepTrack(1);
+      } else {
+        trackProgress = 1;
+        isMediaPlaying = false;
+        document.getElementById("playPauseLabel").textContent = t("Play");
+        renderPlayer();
+      }
     });
     renderPlayer();
-    audioEl.play();
+    try { await audioEl.play(); } catch {}
+  };
+
+  const loadAudioFiles = (fileList) => {
+    const files = Array.from(fileList || []).filter((f) => f.type.startsWith("audio/") || /\.(mp3|wav|flac|ogg|m4a|aac|webm)$/i.test(f.name));
+    if (!files.length) return;
+    const startIdx = customTracks.length;
+    files.forEach((file) => {
+      customTracks.push({
+        title: file.name.replace(/\.[^.]+$/, ""),
+        url: URL.createObjectURL(file),
+        durationSec: 210,
+      });
+    });
+    customTrackIdx = startIdx;
+    playCustomTrack(customTrackIdx);
+  };
+
+  document.getElementById("audioUpload").addEventListener("change", (e) => {
+    loadAudioFiles(e.target.files);
+    e.target.value = "";
+  });
+
+  // Drag & drop custom wallpaper image or audio file(s) onto stage
+  desktopStage.addEventListener("dragover", (e) => {
+    if (e.dataTransfer && e.dataTransfer.types && e.dataTransfer.types.includes("Files")) {
+      e.preventDefault();
+    }
+  });
+  desktopStage.addEventListener("drop", (e) => {
+    if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files);
+    const img = files.find((f) => f.type.startsWith("image/"));
+    if (img) applyCustomWallpaper(img);
+    loadAudioFiles(files);
   });
 
   document.getElementById("nextGenreBtn").addEventListener("click", () => stepTrack(1));
