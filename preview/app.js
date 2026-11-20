@@ -1288,47 +1288,60 @@ function stopSynth() {
   if (!audioEl || audioEl.paused) usingRealAudio = false;
 }
 
-function startSynth() {
+async function startSynth() {
   ensureAudioContext();
+  if (audioCtx && audioCtx.state === "suspended") {
+    try { await audioCtx.resume(); } catch {}
+  }
   if (audioEl && !audioEl.paused) audioEl.pause();
   synthRunning = true;
   usingRealAudio = true;
   document.getElementById("synthAudioBtn").textContent = t("Sound: On");
   document.getElementById("synthAudioBtn").classList.add("is-on");
 
-  const notes = [130.81, 164.81, 196.0, 246.94, 261.63, 196.0, 174.61, 146.83];
+  const chords = [
+    [130.81, 196.0, 246.94, 329.63],
+    [164.81, 246.94, 293.66, 392.0],
+    [174.61, 220.0, 261.63, 349.23],
+    [146.83, 220.0, 261.63, 329.63],
+  ];
   let step = 0;
 
   const triggerStep = () => {
-    if (!synthRunning || !isMediaPlaying) return;
+    if (!synthRunning || !isMediaPlaying || !audioCtx) return;
     const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = step % 2 === 0 ? "sawtooth" : "triangle";
-    osc.frequency.setValueAtTime(notes[step % notes.length], now);
+    const chord = chords[Math.floor(step / 2) % chords.length];
 
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(step % 4 === 0 ? 1800 : 950, now);
+    // Multi-voice pad/arp so low, mid, and high FFT bins stay active
+    chord.forEach((freq, idx) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      osc.type = idx === 0 ? "sawtooth" : "triangle";
+      osc.frequency.setValueAtTime(freq * (step % 2 === 1 && idx === 3 ? 2 : 1), now);
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(step % 4 === 0 ? 3200 : 1800, now);
 
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.exponentialRampToValueAtTime(0.09, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.34);
+      const peak = idx === 0 ? 0.07 : 0.04;
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(peak, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.32);
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(analyser);
-    osc.start(now);
-    osc.stop(now + 0.36);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(analyser);
+      osc.start(now);
+      osc.stop(now + 0.34);
+    });
 
     // Sub kick on beat
     if (step % 2 === 0) {
       const kOsc = audioCtx.createOscillator();
       const kGain = audioCtx.createGain();
       kOsc.type = "sine";
-      kOsc.frequency.setValueAtTime(115, now);
-      kOsc.frequency.exponentialRampToValueAtTime(38, now + 0.16);
-      kGain.gain.setValueAtTime(0.18, now);
+      kOsc.frequency.setValueAtTime(125, now);
+      kOsc.frequency.exponentialRampToValueAtTime(40, now + 0.16);
+      kGain.gain.setValueAtTime(0.24, now);
       kGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
       kOsc.connect(kGain);
       kGain.connect(analyser);
@@ -3582,18 +3595,27 @@ function initUI() {
   playPauseBtn.addEventListener("click", togglePlayPause);
 
   document.getElementById("synthAudioBtn").addEventListener("click", () => {
+    if (currentTrack.isCustomFile && audioEl) {
+      ensureAudioContext();
+      audioEl.muted = !audioEl.muted;
+      if (!audioEl.muted && audioEl.paused && isMediaPlaying) {
+        audioEl.play().catch(() => {});
+      }
+      const soundOn = !audioEl.muted;
+      const btn = document.getElementById("synthAudioBtn");
+      btn.textContent = t(soundOn ? "Sound: On" : "Sound: Off");
+      btn.classList.toggle("is-on", soundOn);
+      return;
+    }
     if (synthRunning) stopSynth();
     else startSynth();
   });
 
-  window.playCustomTrack = async (idx, skipCors = false) => {
+  window.playCustomTrack = (idx, skipCors = false) => {
     const item = customTracks[idx];
     if (!item) return;
     stopSynth();
     ensureAudioContext();
-    if (audioCtx && audioCtx.state === "suspended") {
-      try { await audioCtx.resume(); } catch {}
-    }
     if (mediaSourceNode) {
       try { mediaSourceNode.disconnect(); } catch {}
       mediaSourceNode = null;
@@ -3603,6 +3625,7 @@ function initUI() {
       audioEl.src = "";
     }
     audioEl = new Audio(item.url);
+    audioEl.muted = false;
     const useWebAudio = !skipCors;
     if (useWebAudio) {
       audioEl.crossOrigin = "anonymous";
@@ -3628,6 +3651,9 @@ function initUI() {
     };
     document.getElementById("mediaGenreTag").textContent = currentTrack.genre;
     document.getElementById("playPauseLabel").textContent = t("Pause");
+    const synthBtn = document.getElementById("synthAudioBtn");
+    synthBtn.textContent = t("Sound: On");
+    synthBtn.classList.add("is-on");
     const statusEl = document.getElementById("audioImportStatus");
     if (statusEl) statusEl.textContent = `Playing: ${item.title}`;
     audioEl.addEventListener("error", () => {
@@ -3655,7 +3681,12 @@ function initUI() {
       }
     });
     renderPlayer();
-    try { await audioEl.play(); } catch {}
+    const playPromise = audioEl.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        if (statusEl) statusEl.textContent = `Loaded: ${item.title} — click Play to start audio.`;
+      });
+    }
   };
 
   const loadAudioFiles = (fileList) => {
