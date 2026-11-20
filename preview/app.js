@@ -2820,7 +2820,11 @@ function initUI() {
     });
   });
 
-  // Panel collapse
+  // Panel collapse (start collapsed on tablet/mobile so widgets are visible first)
+  if (window.innerWidth <= 1024) {
+    settingsPanel.classList.add("is-collapsed");
+    desktopStage.classList.add("is-panel-collapsed");
+  }
   const toggleDrawer = () => {
     const collapsed = settingsPanel.classList.toggle("is-collapsed");
     desktopStage.classList.toggle("is-panel-collapsed", collapsed);
