@@ -1015,7 +1015,28 @@
         <div class="tab-pane" id="tab-media">
           <div class="pane-header">
             <h2>Media Source &amp; Rainmeter Export</h2>
-            <p>Configure Rainmeter player target or export your tuned preview settings into Variables.inc.</p>
+            <p>Import your own songs or wallpaper via local files or direct URLs, or export your tuned settings to Variables.inc.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Import Music (Files or Direct Audio URL)</label>
+            <div class="export-actions" style="margin-bottom: 8px;">
+              <label class="pill-btn is-active" for="audioUpload" style="cursor: pointer;">Choose Audio File(s)</label>
+              <button class="pill-btn" type="button" id="clearPlaylistBtn">Clear Playlist</button>
+            </div>
+            <div class="city-search-row">
+              <input type="url" class="city-input" id="audioUrlInput" placeholder="https://example.com/track.mp3 (MP3 / WAV / OGG)" />
+              <button class="pill-btn" type="button" id="loadAudioUrlBtn">Load URL</button>
+            </div>
+            <p class="weather-status" id="audioImportStatus">Supports local files, drag-and-drop, or direct audio URLs.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Import Background (File or Image URL)</label>
+            <div class="city-search-row">
+              <input type="url" class="city-input" id="bgUrlInput" placeholder="https://example.com/wallpaper.jpg" />
+              <button class="pill-btn" type="button" id="loadBgUrlBtn">Apply URL</button>
+            </div>
           </div>
 
           <div class="field-group">

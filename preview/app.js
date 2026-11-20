@@ -3586,7 +3586,7 @@ function initUI() {
     else startSynth();
   });
 
-  window.playCustomTrack = async (idx) => {
+  window.playCustomTrack = async (idx, skipCors = false) => {
     const item = customTracks[idx];
     if (!item) return;
     stopSynth();
@@ -3603,22 +3603,40 @@ function initUI() {
       audioEl.src = "";
     }
     audioEl = new Audio(item.url);
-    audioEl.crossOrigin = "anonymous";
-    mediaSourceNode = audioCtx.createMediaElementSource(audioEl);
-    mediaSourceNode.connect(analyser);
-    usingRealAudio = true;
+    const useWebAudio = !skipCors;
+    if (useWebAudio) {
+      audioEl.crossOrigin = "anonymous";
+      try {
+        mediaSourceNode = audioCtx.createMediaElementSource(audioEl);
+        mediaSourceNode.connect(analyser);
+        usingRealAudio = true;
+      } catch {
+        usingRealAudio = false;
+      }
+    } else {
+      usingRealAudio = false;
+    }
     isMediaPlaying = true;
     trackProgress = 0;
     currentTrack = {
-      genre: customTracks.length > 1 ? `TRACK ${idx + 1}/${customTracks.length}` : "LOCAL FILE",
+      genre: customTracks.length > 1 ? `TRACK ${idx + 1}/${customTracks.length}` : (item.isUrl ? "WEB AUDIO" : "LOCAL FILE"),
       title: item.title,
-      artist: "Local Audio File · Live FFT",
+      artist: item.isUrl ? (useWebAudio ? "Web Audio URL · Live FFT" : "Web Audio URL (CORS fallback)") : "Local Audio File · Live FFT",
       durationSec: item.durationSec || 210,
       coverColors: [state.color1, state.color3],
       isCustomFile: true,
     };
     document.getElementById("mediaGenreTag").textContent = currentTrack.genre;
     document.getElementById("playPauseLabel").textContent = t("Pause");
+    const statusEl = document.getElementById("audioImportStatus");
+    if (statusEl) statusEl.textContent = `Playing: ${item.title}`;
+    audioEl.addEventListener("error", () => {
+      if (item.isUrl && !skipCors) {
+        window.playCustomTrack(idx, true);
+      } else if (statusEl) {
+        statusEl.textContent = "Could not load audio URL (needs a direct MP3/WAV/OGG stream).";
+      }
+    });
     audioEl.addEventListener("loadedmetadata", () => {
       if (Number.isFinite(audioEl.duration) && audioEl.duration > 0) {
         item.durationSec = Math.round(audioEl.duration);
@@ -3649,11 +3667,61 @@ function initUI() {
         title: file.name.replace(/\.[^.]+$/, ""),
         url: URL.createObjectURL(file),
         durationSec: 210,
+        isUrl: false,
       });
     });
     customTrackIdx = startIdx;
     playCustomTrack(customTrackIdx);
   };
+
+  const loadAudioUrl = (raw) => {
+    const url = (raw || "").trim();
+    const statusEl = document.getElementById("audioImportStatus");
+    if (!/^https?:\/\//i.test(url)) {
+      if (statusEl) statusEl.textContent = "Enter a valid http:// or https:// direct audio URL.";
+      return;
+    }
+    let title = "Web Audio Stream";
+    try {
+      const pathname = new URL(url).pathname;
+      const base = decodeURIComponent(pathname.split("/").pop() || "").replace(/\.[^.]+$/, "");
+      if (base) title = base;
+    } catch {}
+    customTracks.push({ title, url, durationSec: 210, isUrl: true });
+    customTrackIdx = customTracks.length - 1;
+    playCustomTrack(customTrackIdx);
+  };
+
+  document.getElementById("loadAudioUrlBtn").addEventListener("click", () => {
+    loadAudioUrl(document.getElementById("audioUrlInput").value);
+  });
+  document.getElementById("audioUrlInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loadAudioUrl(e.target.value);
+  });
+
+  document.getElementById("clearPlaylistBtn").addEventListener("click", () => {
+    customTracks = [];
+    customTrackIdx = -1;
+    if (audioEl) { audioEl.pause(); audioEl.src = ""; }
+    usingRealAudio = false;
+    stepTrack(0);
+    const statusEl = document.getElementById("audioImportStatus");
+    if (statusEl) statusEl.textContent = "Playlist cleared. Back to demo tracks.";
+  });
+
+  document.getElementById("loadBgUrlBtn").addEventListener("click", () => {
+    const url = (document.getElementById("bgUrlInput").value || "").trim();
+    if (!/^https?:\/\//i.test(url)) return;
+    document.querySelectorAll(".wallpaper-pills .pill-btn").forEach((b) => b.classList.remove("is-active"));
+    const uploadPill = document.querySelector(".wallpaper-pills .upload-pill");
+    if (uploadPill) uploadPill.classList.add("is-active");
+    desktopStage.removeAttribute("data-wallpaper");
+    desktopStage.style.backgroundImage = `url("${url}")`;
+    desktopStage.style.backgroundSize = "cover";
+    desktopStage.style.backgroundPosition = "center";
+    renderWeather();
+    renderDock();
+  });
 
   document.getElementById("audioUpload").addEventListener("change", (e) => {
     loadAudioFiles(e.target.files);
