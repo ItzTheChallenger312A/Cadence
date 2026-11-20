@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadence — Part 1–5: Clock, Visualizer, Player, Weather &amp; Dock Preview</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="desktop-stage" id="desktopStage" data-wallpaper="dream">
+    <div class="wallpaper-overlay" id="wallpaperOverlay"></div>
+
+    <!-- Top-left minimal desktop workspace indicator -->
+    <header class="stage-hud" id="stageHud">
+      <div class="brand-chip">
+        <span class="brand-dot" id="brandDot"></span>
+        <span class="brand-title">CADENCE</span>
+        <span class="brand-divider">/</span>
+        <span class="brand-part">Part 1–5 · Clock, Visualizer, Player, Weather &amp; Dock</span>
+      </div>
+
+      <div class="hud-actions">
+        <div class="wallpaper-pills" role="group" aria-label="Desktop wallpaper">
+          <button class="pill-btn is-active" data-wp="dream">Inside Dream</button>
+          <button class="pill-btn" data-wp="summit">Summit</button>
+          <button class="pill-btn" data-wp="obsidian">Obsidian</button>
+          <button class="pill-btn" data-wp="dusk">Warm Dusk</button>
+          <button class="pill-btn" data-wp="paper">Stone Light</button>
+          <label class="pill-btn upload-pill" title="Test with your own desktop wallpaper">
+            <span>Custom BG</span>
+            <input type="file" id="wallpaperUpload" accept="image/*" hidden />
+          </label>
+        </div>
+
+        <button class="toggle-panel-btn" id="togglePanelBtn" title="Toggle Settings Panel (H)">
+          Settings
+        </button>
+      </div>
+    </header>
+
+    <!-- Draggable Part 4: Blended Weather Skin -->
+    <section
+      class="weather-window"
+      id="weatherWindow"
+      aria-label="Cadence Weather Skin"
+      title="Drag to reposition · Double-click for Weather settings"
+    >
+      <div class="weather-skin" id="weatherSkin"></div>
+      <div class="skin-drag-hint">Drag to move</div>
+    </section>
+
+    <!-- Draggable Part 5: Blended App Dock -->
+    <section
+      class="dock-window"
+      id="dockWindow"
+      aria-label="Cadence App Dock"
+      title="Drag to reposition · Double-click for Dock settings"
+    >
+      <div class="dock-skin" id="dockSkin"></div>
+      <div class="dock-toast" id="dockToast" aria-live="polite"></div>
+      <div class="skin-drag-hint">Drag to move</div>
+    </section>
+
+    <svg width="0" height="0" style="position:absolute;pointer-events:none;opacity:0" aria-hidden="true">
+      <defs>
+        <filter id="cadenceWeatherTint" color-interpolation-filters="sRGB">
+          <feColorMatrix id="weatherTintMatrix" type="matrix" values="0.78 0 0 0 0  0 0.60 0 0 0  0 0 0.88 0 0  0 0 0 1 0" />
+        </filter>
+        <filter id="cadenceDockTint" color-interpolation-filters="sRGB">
+          <feColorMatrix id="dockTintMatrix" type="matrix" values="0.78 0 0 0 0  0 0.60 0 0 0  0 0 0.88 0 0  0 0 0 1 0" />
+        </filter>
+      </defs>
+    </svg>
+
+    <!-- Draggable Part 2: Blended Clock, Date & Greeting Widget -->
+    <section
+      class="clock-window"
+      id="clockWindow"
+      aria-label="Cadence Clock Skin"
+      title="Drag to reposition · Double-click for Clock settings"
+    >
+      <div class="clock-totem" id="clockTotem"></div>
+      <div class="skin-drag-hint">Drag to move</div>
+    </section>
+
+    <!-- Draggable Rainmeter Skin Window Simulation -->
+    <section
+      class="skin-window"
+      id="skinWindow"
+      aria-label="Cadence Visualizer Skin"
+      title="Drag to reposition · Double-click to open settings"
+    >
+      <canvas id="visualizerCanvas"></canvas>
+      <div class="skin-drag-hint" id="skinDragHint">Drag to move</div>
+    </section>
+
+    <!-- Draggable Part 3: Blended Music Player Skin -->
+    <section
+      class="player-window"
+      id="playerWindow"
+      aria-label="Cadence Music Player Skin"
+      title="Drag to reposition · Double-click for Player settings"
+    >
+      <div class="player-skin" id="playerSkin"></div>
+      <div class="skin-drag-hint">Drag to move</div>
+    </section>
+
+    <!-- Bottom-left Demo Audio Source Strip -->
+    <footer class="media-bar is-compact" id="mediaBar">
+      <span class="media-genre-tag" id="mediaGenreTag">FUTURE BASS</span>
+      <div class="media-controls">
+        <button class="icon-btn" id="playPauseBtn" title="Play / Pause simulated media (tests Auto-Mute & Progress)">
+          <span id="playPauseLabel">Pause</span>
+        </button>
+        <button class="icon-btn" id="synthAudioBtn" title="Toggle audible Web Audio synthesizer">
+          Sound: Off
+        </button>
+        <label class="icon-btn file-label" title="Load a local MP3 / WAV / FLAC / OGG file">
+          <span>Load Audio</span>
+          <input type="file" id="audioUpload" accept="audio/*" hidden />
+        </label>
+        <button class="icon-btn" id="nextGenreBtn" title="Cycle simulated track & genre (tests Dynamic Colors)">
+          Next Track
+        </button>
+      </div>
+    </footer>
+
+    <!-- Monstercat-inspired Settings Drawer -->
+    <aside class="settings-panel" id="settingsPanel" aria-label="Cadence Visualizer Settings">
+      <nav class="settings-sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">CADENCE</div>
+          <div class="sidebar-sub">SETTINGS</div>
+        </div>
+        <button class="nav-item is-active" data-tab="general">General</button>
+        <button class="nav-item" data-tab="clock">Clock &amp; Date</button>
+        <button class="nav-item" data-tab="player">Music Player</button>
+        <button class="nav-item" data-tab="weather">Weather</button>
+        <button class="nav-item" data-tab="dock">App Dock</button>
+        <button class="nav-item" data-tab="spectrum">Spectrum &amp; Audio</button>
+        <button class="nav-item" data-tab="wave">Wave Physics</button>
+        <button class="nav-item" data-tab="scope">WMP Scope</button>
+        <button class="nav-item" data-tab="styling">Styling &amp; Colors</button>
+        <button class="nav-item" data-tab="media">Media &amp; Export</button>
+        <div class="sidebar-spacer"></div>
+        <button class="nav-action" id="resetDefaultsBtn">Reset Defaults</button>
+        <button class="nav-action accent-action" id="exportVarsBtn">Export Variables</button>
+      </nav>
+
+      <div class="settings-body">
+        <!-- TAB: GENERAL -->
+        <div class="tab-pane is-active" id="tab-general">
+          <div class="pane-header">
+            <h2>General &amp; Visual Mode</h2>
+            <p>Blend Irena's WaterWave and Inside Dream's centered bars, or isolate any single engine.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Visualizer Mode</label>
+            <div class="mode-grid">
+              <button class="mode-card is-active" data-mode="0">
+                <strong>DreamWave</strong>
+                <span>Blended</span>
+              </button>
+              <button class="mode-card" data-mode="1">
+                <strong>Inside Dream</strong>
+                <span>Mirrored Bars</span>
+              </button>
+              <button class="mode-card" data-mode="2">
+                <strong>Irena</strong>
+                <span>WaterWave</span>
+              </button>
+              <button class="mode-card" data-mode="3">
+                <strong>Monstercat</strong>
+                <span>Bottom-Up</span>
+              </button>
+              <button class="mode-card" data-mode="4">
+                <strong>WMP Scope</strong>
+                <span>Oscilloscope</span>
+              </button>
+              <button class="mode-card" data-mode="5">
+                <strong>Radial Ring</strong>
+                <span>Circular Spectrum</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Suite Presets</label>
+            <div class="segmented-row three-col" id="suitePresetButtons">
+              <button class="seg-btn" data-preset="studio">Studio Glass</button>
+              <button class="seg-btn" data-preset="wmp">WMP Retro</button>
+              <button class="seg-btn" data-preset="minimal">Minimal Focus</button>
+              <button class="seg-btn" data-preset="amber">Warm Amber</button>
+              <button class="seg-btn" data-preset="sakura">Sakura Bloom</button>
+              <button class="seg-btn" data-preset="jade">Jade Neon</button>
+              <button class="seg-btn" data-preset="ice">Ice Blizzard</button>
+              <button class="seg-btn" data-preset="lavender_town">Lavender Town</button>
+              <button class="seg-btn" data-preset="midnight">Midnight Nostalgia</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Bar Style</label>
+            <div class="segmented-row three-col" id="barStyleButtons">
+              <button class="seg-btn is-active" data-barstyle="0">Rounded</button>
+              <button class="seg-btn" data-barstyle="1">Sharp (Monstercat)</button>
+              <button class="seg-btn" data-barstyle="2">Connected-Through</button>
+            </div>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Background Opacity</span>
+              <output id="out-bgOpacity">86%</output>
+            </div>
+            <input type="range" id="in-bgOpacity" min="0" max="100" step="2" value="86" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Visualizer Scale</span>
+              <output id="out-scaleVisualizer">1.00x</output>
+            </div>
+            <input type="range" id="in-scaleVisualizer" min="0.4" max="1.6" step="0.02" value="1.0" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Visualizer Height</span>
+              <output id="out-barHeight">220 px</output>
+            </div>
+            <input type="range" id="in-barHeight" min="80" max="420" step="5" value="220" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Rotation Angle</span>
+              <output id="out-angle">0°</output>
+            </div>
+            <input type="range" id="in-angle" min="0" max="360" step="1" value="0" />
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>Show song progress bar (when angle = 0°)</span>
+              <input type="checkbox" id="in-showProgressBar" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Hide skin when media is stopped</span>
+              <input type="checkbox" id="in-enableAutoHide" />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Ignore audio when media is paused</span>
+              <input type="checkbox" id="in-enableAutoMute" />
+              <span class="switch"></span>
+            </label>
+          </div>
+
+          <div class="field-group" style="margin-top: 14px;">
+            <label class="field-label">Overlay Layers (Mix &amp; Match)</label>
+            <div class="segmented-row three-col" id="overlayLayerButtons">
+              <button class="seg-btn" data-overlay="enableSpheresLayer">Spheres</button>
+              <button class="seg-btn" data-overlay="enableRaysLayer">Stereo Rays</button>
+              <button class="seg-btn" data-overlay="enablePeaksLayer">Peak Dots</button>
+              <button class="seg-btn" data-overlay="enableBassAuraLayer">Bass Aura</button>
+              <button class="seg-btn" data-overlay="enableParticlesLayer">Particles</button>
+              <button class="seg-btn" data-overlay="enableShockwaveLayer">Shockwaves</button>
+              <button class="seg-btn" data-overlay="enableOrbitalsLayer">Orbitals</button>
+              <button class="seg-btn" data-overlay="enableRibbonLayer">Aurora Ribbon</button>
+              <button class="seg-btn" data-overlay="clear">Clear All</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: CLOCK & DATE (PART 2: SUMMIT x ROBIK) -->
+        <div class="tab-pane" id="tab-clock">
+          <div class="pane-header">
+            <h2>Clock, Date &amp; Greeting</h2>
+            <p>Merge Summit's vertical hairline architecture with Robik's layered backdrop time and brush-script weekday.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Layout</label>
+            <div class="mode-grid" id="clockModeButtons">
+              <button class="clock-card is-active" data-clockmode="0">
+                <strong>Summit × Robik</strong>
+                <span>Blended layered time</span>
+              </button>
+              <button class="clock-card" data-clockmode="2">
+                <strong>Robik Layered</strong>
+                <span>Classic translucent script</span>
+              </button>
+              <button class="clock-card" data-clockmode="1">
+                <strong>Summit Vertical</strong>
+                <span>electroharmonix column</span>
+              </button>
+              <button class="clock-card" data-clockmode="3">
+                <strong>Summit Horizontal</strong>
+                <span>electroharmonix lockup</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Font</label>
+            <div class="segmented-row two-col" id="clockFontButtons">
+              <button class="seg-btn is-active" data-clockfont="Moving Skate">Moving Skate</button>
+              <button class="seg-btn" data-clockfont="Tuesday Night">Tuesday Night</button>
+              <button class="seg-btn" data-clockfont="Allura">Allura</button>
+              <button class="seg-btn" data-clockfont="Anurati">Anurati</button>
+              <button class="seg-btn" data-clockfont="Cactus Classical Serif">Cactus Classical</button>
+              <button class="seg-btn" data-clockfont="Chiron Sung HK">Chiron Sung HK</button>
+              <button class="seg-btn" data-clockfont="LXGW WenKai TC">LXGW WenKai</button>
+              <button class="seg-btn" data-clockfont="JetBrains Mono SemiBold">JetBrains (Code)</button>
+            </div>
+            <p class="font-compat-note is-hidden" id="clockFontViNote" role="status"></p>
+          </div>
+
+          <div class="field-group" id="clockPosField">
+            <label class="field-label">Position</label>
+            <div class="segmented-row two-col" id="clockPosButtons">
+              <button class="seg-btn is-active" data-clockpos="0">Center</button>
+              <button class="seg-btn" data-clockpos="1">Lower</button>
+            </div>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Scale</span>
+              <output id="out-clockScale">1.00x</output>
+            </div>
+            <input type="range" id="in-clockScale" min="0.55" max="1.60" step="0.05" value="1.0" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Backdrop Time Opacity</span>
+              <output id="out-clockTimeAlpha">38%</output>
+            </div>
+            <input type="range" id="in-clockTimeAlpha" min="15" max="90" step="1" value="38" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Time Separator</label>
+            <div class="segmented-row" id="clockSepButtons">
+              <button class="seg-btn is-active" data-sep=":">Colon (13:20)</button>
+              <button class="seg-btn" data-sep=".">Robik Dot (13.20)</button>
+            </div>
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>24-Hour clock format</span>
+              <input type="checkbox" id="in-clock24H" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show seconds</span>
+              <input type="checkbox" id="in-clockShowSeconds" />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show Summit vertical hairlines</span>
+              <input type="checkbox" id="in-clockShowRules" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show time-of-day greeting</span>
+              <input type="checkbox" id="in-clockShowGreeting" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show % of day passed</span>
+              <input type="checkbox" id="in-clockShowDayProgress" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Use palette gradient on weekday</span>
+              <input type="checkbox" id="in-clockUseGradientAccent" checked />
+              <span class="switch"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- TAB: MUSIC PLAYER (PART 3: BLENDED PLAYER) -->
+        <div class="tab-pane" id="tab-player">
+          <div class="pane-header">
+            <h2>Music Player &amp; Song Info</h2>
+            <p>Blends Monstercat cover art, Mond's glowing halo scrubber, Inside Dream marquee, Irena % progress, and Summit headers.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Layout</label>
+            <div class="segmented-row three-col" id="playerModeButtons">
+              <button class="seg-btn is-active" data-playermode="0">Cadence Studio</button>
+              <button class="seg-btn" data-playermode="1">Minimal Totem</button>
+              <button class="seg-btn" data-playermode="2">Monstercat</button>
+            </div>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Scale</span>
+              <output id="out-playerScale">1.00x</output>
+            </div>
+            <input type="range" id="in-playerScale" min="0.6" max="1.6" step="0.05" value="1.0" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Album Art Corner Radius</span>
+              <output id="out-playerCoverRadius">8 px</output>
+            </div>
+            <input type="range" id="in-playerCoverRadius" min="0" max="40" step="2" value="8" />
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>Show album artwork</span>
+              <input type="checkbox" id="in-playerShowCover" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show "♪ You're Listening" header</span>
+              <input type="checkbox" id="in-playerShowHeader" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Scroll long track titles</span>
+              <input type="checkbox" id="in-playerMarquee" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show track % elapsed</span>
+              <input type="checkbox" id="in-playerShowPercent" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show card background</span>
+              <input type="checkbox" id="in-playerShowCardBg" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Auto-hide player when stopped</span>
+              <input type="checkbox" id="in-playerAutoHide" />
+              <span class="switch"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- TAB: WEATHER (PART 4: BLENDED WEATHER) -->
+        <div class="tab-pane" id="tab-weather">
+          <div class="pane-header">
+            <h2>Blended Weather</h2>
+            <p>Live Open-Meteo forecast with Mond tracked city, Robik tinted line icons, Irena narrative, and Inside Dream 4-day hi/lo strip.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Layout</label>
+            <div class="segmented-row two-col" id="weatherModeButtons">
+              <button class="seg-btn is-active" data-wmode="0">Cadence Studio</button>
+              <button class="seg-btn" data-wmode="1">Minimal Horizon</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="in-weatherCity">Location</label>
+            <div class="city-input-row">
+              <input
+                type="text"
+                class="city-input"
+                id="in-weatherCity"
+                value="Ho Chi Minh City"
+                placeholder="Enter city (e.g. Paris, Kyoto)..."
+              />
+              <button class="seg-btn accent-btn" id="applyCityBtn" type="button">Apply</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Preset Cities</label>
+            <div class="segmented-row three-col" id="weatherCityButtons">
+              <button class="seg-btn is-active" data-city="Ho Chi Minh City">Ho Chi Minh City</button>
+              <button class="seg-btn" data-city="Tokyo">Tokyo</button>
+              <button class="seg-btn" data-city="Seoul">Seoul</button>
+              <button class="seg-btn" data-city="London">London</button>
+              <button class="seg-btn" data-city="New York">New York</button>
+              <button class="seg-btn" data-city="Reykjavik">Reykjavik</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Temperature Unit</label>
+            <div class="segmented-row two-col" id="weatherUnitButtons">
+              <button class="seg-btn is-active" data-wunit="C">°C Celsius</button>
+              <button class="seg-btn" data-wunit="F">°F Fahrenheit</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Icon Pack</label>
+            <div class="segmented-row three-col" id="weatherPackButtons">
+              <button class="seg-btn is-active" data-wpack="dream">Dream</button>
+              <button class="seg-btn" data-wpack="robik">Robik</button>
+              <button class="seg-btn" data-wpack="mond">Mond (Color)</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Weather Preview</label>
+            <div class="segmented-row three-col" id="weatherCondButtons">
+              <button class="seg-btn is-active" data-wcond="auto">Auto (Live)</button>
+              <button class="seg-btn" data-wcond="0">Clear</button>
+              <button class="seg-btn" data-wcond="2">Cloudy</button>
+              <button class="seg-btn" data-wcond="63">Rain</button>
+              <button class="seg-btn" data-wcond="95">Storm</button>
+              <button class="seg-btn" data-wcond="73">Snow</button>
+            </div>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Scale</span>
+              <output id="out-weatherScale">1.00x</output>
+            </div>
+            <input type="range" id="in-weatherScale" min="0.6" max="1.5" step="0.05" value="1.0" />
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>Show 4-day forecast</span>
+              <input type="checkbox" id="in-weatherShowForecast" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show feels-like, wind speed &amp; humidity</span>
+              <input type="checkbox" id="in-weatherShowDetails" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show card background</span>
+              <input type="checkbox" id="in-weatherShowCardBg" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Tint line icons with palette</span>
+              <input type="checkbox" id="in-weatherTintIcon" checked />
+              <span class="switch"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- TAB: APP DOCK (PART 5: BLENDED DOCK) -->
+        <div class="tab-pane" id="tab-dock">
+          <div class="pane-header">
+            <h2>Blended App Dock</h2>
+            <p>Combines Inside Dream hover magnification, Summit monochrome icons and tooltips, Irena/Mond live Recycle Bin status, and studio glassmorphism.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Layout</label>
+            <div class="segmented-row two-col" id="dockModeButtons">
+              <button class="seg-btn is-active" data-dmode="0">Studio Capsule</button>
+              <button class="seg-btn" data-dmode="1">Summit Float</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Dock Position</label>
+            <div class="segmented-row two-col" id="dockOrientationButtons">
+              <button class="seg-btn is-active" data-dorient="0">Horizontal</button>
+              <button class="seg-btn" data-dorient="1">Vertical</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Hover Label Position</label>
+            <div class="segmented-row two-col" id="dockLabelPosButtons">
+              <button class="seg-btn is-active" data-dlblpos="0">Upper</button>
+              <button class="seg-btn" data-dlblpos="1">Lower</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Hover Label Style</label>
+            <div class="segmented-row two-col" id="dockLabelStyleButtons">
+              <button class="seg-btn is-active" data-dlblstyle="0">Text Background</button>
+              <button class="seg-btn" data-dlblstyle="1">Text Only</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Visible Slots</label>
+            <div class="segmented-row three-col" id="dockCountButtons">
+              <button class="seg-btn" data-dcount="7">7 Icons</button>
+              <button class="seg-btn is-active" data-dcount="9">9 Icons</button>
+              <button class="seg-btn" data-dcount="11">11 Icons</button>
+              <button class="seg-btn" data-dcount="13">13 Icons</button>
+              <button class="seg-btn" data-dcount="15">15 Icons</button>
+            </div>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Scale</span>
+              <output id="out-dockScale">1.00x</output>
+            </div>
+            <input type="range" id="in-dockScale" min="0.6" max="1.5" step="0.05" value="1.0" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Base Icon Size</span>
+              <output id="out-dockIconSize">24 px</output>
+            </div>
+            <input type="range" id="in-dockIconSize" min="18" max="36" step="2" value="24" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Icon Spacing</span>
+              <output id="out-dockSpacing">50 px</output>
+            </div>
+            <input type="range" id="in-dockSpacing" min="8" max="64" step="2" value="50" />
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>Magnify icons on hover</span>
+              <input type="checkbox" id="in-dockHoverZoom" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show label on hover</span>
+              <input type="checkbox" id="in-dockShowLabels" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Show dock background</span>
+              <input type="checkbox" id="in-dockShowCardBg" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Tint hovered icon with palette</span>
+              <input type="checkbox" id="in-dockTintIcons" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Live Recycle Bin status &amp; item badge</span>
+              <input type="checkbox" id="in-dockShowBinCount" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Simulate full Recycle Bin</span>
+              <input type="checkbox" id="in-dockBinHasItems" checked />
+              <span class="switch"></span>
+            </label>
+          </div>
+
+          <div class="field-group dock-customizer-group">
+            <label class="field-label">Customize Dock Slot</label>
+            <div class="dock-slot-pills" id="dockSlotTabs"></div>
+            <div class="dock-slot-editor">
+              <div class="dock-editor-header">
+                <span class="dock-slot-meta" id="dockSlotMeta">Slot 1</span>
+                <div class="dock-editor-actions">
+                  <button class="dock-mini-btn" type="button" id="dockAddSlotBtn">+ Add</button>
+                  <button class="dock-mini-btn is-danger" type="button" id="dockRemoveSlotBtn">Remove</button>
+                </div>
+              </div>
+              <div class="dock-editor-inputs">
+                <input type="text" class="city-input" id="in-dockSlotLabel" placeholder="Shortcut label" />
+                <input type="text" class="city-input" id="in-dockSlotCmd" placeholder='Command (e.g. ["wt.exe"])' />
+              </div>
+              <div class="dock-icon-grid" id="dockIconPicker"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: SPECTRUM & AUDIO -->
+        <div class="tab-pane" id="tab-spectrum">
+          <div class="pane-header">
+            <h2>Spectrum &amp; Audio Engine</h2>
+            <p>Monstercat FFT resolution, weighted neighbor smoothing, and Inside Dream bar spacing.</p>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Bar Width</span>
+              <output id="out-barWidth">5 px</output>
+            </div>
+            <input type="range" id="in-barWidth" min="2" max="24" step="1" value="5" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Bar Gap</span>
+              <output id="out-barGap">8 px</output>
+            </div>
+            <input type="range" id="in-barGap" min="0" max="24" step="1" value="8" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Bar Count</span>
+              <output id="out-barCount">64 bands</output>
+            </div>
+            <input type="range" id="in-barCount" min="16" max="100" step="1" value="64" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Bar Corner Radius</span>
+              <output id="out-barRadius">3 px</output>
+            </div>
+            <input type="range" id="in-barRadius" min="0" max="12" step="1" value="3" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Sensitivity</span>
+              <output id="out-sensitivity">38 dB</output>
+            </div>
+            <input type="range" id="in-sensitivity" min="10" max="80" step="1" value="38" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Smoothing Level</span>
+              <output id="out-averageSize">3</output>
+            </div>
+            <input type="range" id="in-averageSize" min="0" max="10" step="1" value="3" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Log Multiplier</span>
+              <output id="out-multiplier">42</output>
+            </div>
+            <input type="range" id="in-multiplier" min="5" max="100" step="1" value="42" />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">FFT Resolution</label>
+            <div class="segmented-row" id="fftButtons">
+              <button class="seg-btn" data-fft="512">512</button>
+              <button class="seg-btn" data-fft="1024">1024</button>
+              <button class="seg-btn" data-fft="2048">2048</button>
+              <button class="seg-btn is-active" data-fft="4096">4096</button>
+              <button class="seg-btn" data-fft="8192">8192</button>
+            </div>
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>Center-mirrored bars</span>
+              <input type="checkbox" id="in-mirrorMode" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Invert spectrum (flip bass / treble)</span>
+              <input type="checkbox" id="in-invertVisualizer" />
+              <span class="switch"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- TAB: WAVE PHYSICS -->
+        <div class="tab-pane" id="tab-wave">
+          <div class="pane-header">
+            <h2>WaterWave Physics (Irena)</h2>
+            <p>1D spring-coupled height-map simulation layered across the spectrum.</p>
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>Enable WaterWave spline layer</span>
+              <input type="checkbox" id="in-waveEnabled" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Translucent gradient fill under wave</span>
+              <input type="checkbox" id="in-waveFill" checked />
+              <span class="switch"></span>
+            </label>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Spring Stiffness</span>
+              <output id="out-waveStiffness">1.04</output>
+            </div>
+            <input type="range" id="in-waveStiffness" min="1.00" max="1.25" step="0.01" value="1.04" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Ripple Spread</span>
+              <output id="out-waveSpread">8</output>
+            </div>
+            <input type="range" id="in-waveSpread" min="2" max="20" step="1" value="8" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Wave Amplitude</span>
+              <output id="out-waveScale">7</output>
+            </div>
+            <input type="range" id="in-waveScale" min="2" max="20" step="1" value="7" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Energy Exponent</span>
+              <output id="out-waveExpScale">1.6</output>
+            </div>
+            <input type="range" id="in-waveExpScale" min="0.6" max="2.5" step="0.1" value="1.6" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Stroke Thickness</span>
+              <output id="out-waveStrokeWidth">2.5 px</output>
+            </div>
+            <input type="range" id="in-waveStrokeWidth" min="1.0" max="6.0" step="0.5" value="2.5" />
+          </div>
+        </div>
+
+        <!-- TAB: WMP SCOPE -->
+        <div class="tab-pane" id="tab-scope">
+          <div class="pane-header">
+            <h2>WMP Scope (Oscilloscope)</h2>
+            <p>Tune the Windows Media Player (2007–2013) oscilloscope trace, phosphor bloom, temporal smoothing, and stereo dual-beam overlay.</p>
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>Phosphor afterglow trail</span>
+              <input type="checkbox" id="in-scopeTrail" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Pinch edges (Edge taper)</span>
+              <input type="checkbox" id="in-scopeEdgeTaper" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Dual-beam stereo trace</span>
+              <input type="checkbox" id="in-scopeDualTrace" />
+              <span class="switch"></span>
+            </label>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Scope Sharpness</span>
+              <output id="out-scopeSharpness">1.0x</output>
+            </div>
+            <input type="range" id="in-scopeSharpness" min="0.3" max="2.5" step="0.1" value="1.0" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Scope Thickness</span>
+              <output id="out-scopeThickness">1.4 px</output>
+            </div>
+            <input type="range" id="in-scopeThickness" min="0.6" max="4.0" step="0.1" value="1.4" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Scope Sensitivity</span>
+              <output id="out-scopeSensitivity">1.0x</output>
+            </div>
+            <input type="range" id="in-scopeSensitivity" min="0.3" max="2.5" step="0.1" value="1.0" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Glow / Bloom</span>
+              <output id="out-scopeGlow">35%</output>
+            </div>
+            <input type="range" id="in-scopeGlow" min="0" max="100" step="5" value="35" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Trace Smoothing</span>
+              <output id="out-scopeSmoothing">0.30</output>
+            </div>
+            <input type="range" id="in-scopeSmoothing" min="0" max="0.85" step="0.05" value="0.30" />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Wave Speed</span>
+              <output id="out-scopeSpeed">1.0x</output>
+            </div>
+            <input type="range" id="in-scopeSpeed" min="0.2" max="2.5" step="0.1" value="1.0" />
+          </div>
+        </div>
+
+        <!-- TAB: STYLING & COLORS -->
+        <div class="tab-pane" id="tab-styling">
+          <div class="pane-header">
+            <h2>Styling &amp; Dynamic Colors</h2>
+            <p>3-stop Irena gradients, Inside Dream core tint, and Monstercat dynamic color modes.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Signature Gradient Palettes</label>
+            <div class="palette-grid" id="paletteGrid"></div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Custom Gradient Stops &amp; Solid Tint</label>
+            <div class="color-inputs-row">
+              <label class="color-box">
+                <input type="color" id="in-color1" value="#8785fe" />
+                <span>Stop 1</span>
+              </label>
+              <label class="color-box">
+                <input type="color" id="in-color2" value="#c79ae0" />
+                <span>Stop 2</span>
+              </label>
+              <label class="color-box">
+                <input type="color" id="in-color3" value="#fdacc7" />
+                <span>Stop 3</span>
+              </label>
+              <label class="color-box">
+                <input type="color" id="in-barColor" value="#ebeeff" />
+                <span>Solid Bar</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Color Gradient Angles</label>
+            <div class="gradient-angle-card">
+              <div class="grad-angle-block">
+                <div class="slider-top">
+                  <span>Theme, Wave &amp; Clock</span>
+                  <output id="out-gradientAngle">0°</output>
+                </div>
+                <div class="grad-angle-presets" id="gradAngleButtons">
+                  <button class="seg-btn is-active" type="button" data-gangle="0">0° →</button>
+                  <button class="seg-btn" type="button" data-gangle="45">45° ↘</button>
+                  <button class="seg-btn" type="button" data-gangle="90">90° ↓</button>
+                  <button class="seg-btn" type="button" data-gangle="135">135° ↙</button>
+                  <button class="seg-btn" type="button" data-gangle="180">180° ←</button>
+                  <button class="seg-btn" type="button" data-gangle="270">270° ↑</button>
+                </div>
+                <div class="grad-angle-slider-row">
+                  <input type="range" id="in-gradientAngle" min="0" max="360" step="5" value="0" />
+                  <span class="grad-angle-preview" aria-hidden="true"></span>
+                </div>
+              </div>
+
+              <div class="grad-angle-block">
+                <div class="slider-top">
+                  <span>Spectrum Bars</span>
+                  <output id="out-barGradientAngle">90°</output>
+                </div>
+                <div class="grad-angle-presets" id="barGradAngleButtons">
+                  <button class="seg-btn" type="button" data-bangle="0">0° →</button>
+                  <button class="seg-btn" type="button" data-bangle="45">45° ↘</button>
+                  <button class="seg-btn is-active" type="button" data-bangle="90">90° ↓</button>
+                  <button class="seg-btn" type="button" data-bangle="135">135° ↙</button>
+                  <button class="seg-btn" type="button" data-bangle="180">180° ←</button>
+                  <button class="seg-btn" type="button" data-bangle="270">270° ↑</button>
+                </div>
+                <div class="grad-angle-slider-row">
+                  <input type="range" id="in-barGradientAngle" min="0" max="360" step="5" value="90" />
+                  <span class="grad-angle-preview is-bar" aria-hidden="true"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Dynamic Coloring</label>
+            <div class="segmented-row" id="dynColorButtons">
+              <button class="seg-btn is-active" data-dyn="0">Static / Gradient</button>
+              <button class="seg-btn" data-dyn="1">Genre Tags</button>
+              <button class="seg-btn" data-dyn="2">Cover Art</button>
+            </div>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-top">
+              <span>Bar Opacity</span>
+              <output id="out-barAlpha">84%</output>
+            </div>
+            <input type="range" id="in-barAlpha" min="30" max="100" step="2" value="84" />
+          </div>
+
+          <div class="toggle-list">
+            <label class="toggle-row">
+              <span>Apply 3-stop gradient to bars</span>
+              <input type="checkbox" id="in-useGradientBars" checked />
+              <span class="switch"></span>
+            </label>
+            <label class="toggle-row">
+              <span>Enable soft drop shadow</span>
+              <input type="checkbox" id="in-enableDropShadow" checked />
+              <span class="switch"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- TAB: MEDIA & EXPORT -->
+        <div class="tab-pane" id="tab-media">
+          <div class="pane-header">
+            <h2>Media Source &amp; Rainmeter Export</h2>
+            <p>Configure Rainmeter player target or export your tuned preview settings into Variables.inc.</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Rainmeter Player Target</label>
+            <div class="player-grid" id="playerButtons">
+              <button class="seg-btn is-active" data-player="Web">WebNowPlaying</button>
+              <button class="seg-btn" data-player="Spotify">Spotify</button>
+              <button class="seg-btn" data-player="AIMP">AIMP</button>
+              <button class="seg-btn" data-player="CAD">foobar / MusicBee</button>
+              <button class="seg-btn" data-player="iTunes">iTunes</button>
+              <button class="seg-btn" data-player="WMP">WMP</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Generated Variables.inc Snapshot</label>
+            <pre class="code-preview" id="varsPreview"></pre>
+            <div class="export-actions">
+              <button class="pill-btn" id="copyVarsBtn">Copy Variables.inc</button>
+              <button class="pill-btn is-active" id="downloadVarsBtn">Download Variables.inc</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
