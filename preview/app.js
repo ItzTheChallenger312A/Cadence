@@ -304,8 +304,8 @@ let waveMap2 = new Float32Array(256);
 let useMap1 = true;
 let smoothedHistory = [];
 let scopePrevY = new Float32Array(240);
-let scopePrevPts = null;
-let wavePrevPts = null;
+let scopeTrailHist = [];
+let waveTrailHist = [];
 let scopePhase = 0;
 let peakHold = new Float32Array(128);
 let overlayParticles = Array.from({ length: 28 }, (_, i) => ({
@@ -1089,18 +1089,26 @@ function renderFrame(nowMs) {
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
 
-    if (useTrail && scopePrevPts && scopePrevPts.length === ptsCount) {
-      ctx.save();
-      ctx.beginPath();
-      for (let i = 0; i < ptsCount; i++) {
-        if (i === 0) ctx.moveTo(scopePrevPts[i].x, scopePrevPts[i].y);
-        else ctx.lineTo(scopePrevPts[i].x, scopePrevPts[i].y);
-      }
-      ctx.strokeStyle = themeGrad;
-      ctx.globalAlpha = 0.28;
-      ctx.lineWidth = thick * scale;
-      ctx.stroke();
-      ctx.restore();
+    if (useTrail && scopeTrailHist.length > 0) {
+      const lags = [
+        { idx: Math.max(0, scopeTrailHist.length - 6), alpha: 0.18, w: thick + 1.0 },
+        { idx: Math.max(0, scopeTrailHist.length - 3), alpha: 0.36, w: thick + 0.5 },
+      ];
+      lags.forEach(({ idx, alpha, w }) => {
+        const trail = scopeTrailHist[idx];
+        if (!trail || trail.length !== ptsCount) return;
+        ctx.save();
+        ctx.beginPath();
+        for (let i = 0; i < ptsCount; i++) {
+          if (i === 0) ctx.moveTo(trail[i].x, trail[i].y);
+          else ctx.lineTo(trail[i].x, trail[i].y);
+        }
+        ctx.strokeStyle = themeGrad;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = w * scale;
+        ctx.stroke();
+        ctx.restore();
+      });
     }
 
     if (useDual && dualPts) {
@@ -1129,7 +1137,8 @@ function renderFrame(nowMs) {
     ctx.stroke();
     ctx.restore();
 
-    scopePrevPts = mainPts;
+    scopeTrailHist.push(mainPts);
+    if (scopeTrailHist.length > 7) scopeTrailHist.shift();
   }
 
   // 2.6 Radial Ring Mode
@@ -1226,19 +1235,27 @@ function renderFrame(nowMs) {
       ctx.restore();
     }
 
-    if (state.waveTrail && wavePrevPts && wavePrevPts.length === pts.length) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(0, wavePrevPts[0].cy);
-      for (let i = 0; i < wavePrevPts.length; i++) {
-        ctx.quadraticCurveTo(wavePrevPts[i].cx, wavePrevPts[i].cy, wavePrevPts[i].xEnd, wavePrevPts[i].yEnd);
-      }
-      ctx.strokeStyle = waveGrad;
-      ctx.globalAlpha = 0.28;
-      ctx.lineWidth = state.waveStrokeWidth * scale;
-      ctx.lineCap = "round";
-      ctx.stroke();
-      ctx.restore();
+    if (state.waveTrail && waveTrailHist.length > 0) {
+      const lags = [
+        { idx: Math.max(0, waveTrailHist.length - 6), alpha: 0.18, w: state.waveStrokeWidth + 1.0 },
+        { idx: Math.max(0, waveTrailHist.length - 3), alpha: 0.36, w: state.waveStrokeWidth + 0.5 },
+      ];
+      lags.forEach(({ idx, alpha, w }) => {
+        const trail = waveTrailHist[idx];
+        if (!trail || trail.length !== pts.length) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(0, trail[0].cy);
+        for (let i = 0; i < trail.length; i++) {
+          ctx.quadraticCurveTo(trail[i].cx, trail[i].cy, trail[i].xEnd, trail[i].yEnd);
+        }
+        ctx.strokeStyle = waveGrad;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = w * scale;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.restore();
+      });
     }
 
     if (state.waveDualTrace) {
@@ -1281,7 +1298,8 @@ function renderFrame(nowMs) {
     ctx.lineCap = "round";
     ctx.stroke();
     ctx.restore();
-    wavePrevPts = pts;
+    waveTrailHist.push(pts);
+    if (waveTrailHist.length > 7) waveTrailHist.shift();
   }
 
   // Advance playback progress for both visualizer bar and Music Player

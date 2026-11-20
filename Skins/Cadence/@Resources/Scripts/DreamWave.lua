@@ -123,7 +123,8 @@ function Initialize()
 	tC.ScopeEdgeTaper = math.floor(SKIN:ParseFormula(SKIN:GetVariable("ScopeEdgeTaper", "1")))
 	tC.ScopeDualTrace = math.floor(SKIN:ParseFormula(SKIN:GetVariable("ScopeDualTrace", "0")))
 	tC.ScopePrevY = {}
-	tC.ScopePrevPath = nil
+	tC.ScopeHistory = {}
+	tC.WaveHistory = {}
 	tC.Width = totalWidth
 	tC.Height = barHeight
 	tC.CenterY = (mirrorMode == 1) and (barHeight * 0.5) or (barHeight * 0.86)
@@ -136,7 +137,6 @@ function Initialize()
 	tC.Fill = math.floor(SKIN:ParseFormula(SKIN:GetVariable("WaveFill", "1"))) > 0
 	tC.WaveTrail = math.floor(SKIN:ParseFormula(SKIN:GetVariable("WaveTrail", "1"))) == 1
 	tC.WaveDualTrace = math.floor(SKIN:ParseFormula(SKIN:GetVariable("WaveDualTrace", "0"))) == 1
-	tC.WavePrevPath = nil
 	tC.FillY = (mirrorMode == 1) and (barHeight * 0.5) or barHeight
 	tC.BarStyle = math.floor(SKIN:ParseFormula(SKIN:GetVariable("BarStyle", "0")))
 	tC.VisMode = visMode
@@ -280,10 +280,15 @@ local function updateWmpScope(isMuted)
 	end
 
 	local waveStr = table.concat(parts, " | ")
-	if tC.ScopeTrail == 1 and tC.ScopePrevPath then
-		SKIN:Bang("!SetOption", "MeterWaveTrail", "TrailPath", tC.ScopePrevPath)
+	if tC.ScopeTrail == 1 then
+		table.insert(tC.ScopeHistory, waveStr)
+		if #tC.ScopeHistory > 5 then
+			local ghost = table.remove(tC.ScopeHistory, 1)
+			SKIN:Bang("!SetOption", "MeterWaveTrail", "TrailPath", ghost)
+		elseif #tC.ScopeHistory >= 2 then
+			SKIN:Bang("!SetOption", "MeterWaveTrail", "TrailPath", tC.ScopeHistory[1])
+		end
 	end
-	tC.ScopePrevPath = waveStr
 
 	SKIN:Bang("!SetOption", "MeterWaveBar", "WavePath", waveStr)
 	SKIN:Bang("!SetOption", "MeterWaveBar", "WaveFillPath", "0,0 | LineTo 1,0 | ClosePath 1")
@@ -526,10 +531,15 @@ function Update()
 
 	local stepX = tC.Width / math.max(1, nPoints - 1)
 	local strokePath = toCurve(dest, 0, tC.CenterY, tC.Amp, stepX, -tC.Scale, false)
-	if tC.WaveTrail and tC.WavePrevPath then
-		SKIN:Bang("!SetOption", "MeterWaterWaveTrail", "WaterTrailPath", tC.WavePrevPath)
+	if tC.WaveTrail then
+		table.insert(tC.WaveHistory, strokePath)
+		if #tC.WaveHistory > 5 then
+			local ghost = table.remove(tC.WaveHistory, 1)
+			SKIN:Bang("!SetOption", "MeterWaterWaveTrail", "WaterTrailPath", ghost)
+		elseif #tC.WaveHistory >= 2 then
+			SKIN:Bang("!SetOption", "MeterWaterWaveTrail", "WaterTrailPath", tC.WaveHistory[1])
+		end
 	end
-	tC.WavePrevPath = strokePath
 	if tC.WaveDualTrace then
 		local dualDest = {}
 		for i = 1, nPoints do
