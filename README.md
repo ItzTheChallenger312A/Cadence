@@ -73,3 +73,16 @@ Open `http://127.0.0.1:4173/` to test all visualizer modes, overlays, suite pres
   - **Music Player:** Fixed full-card elapsed/percentage formula output and added marquee scrolling for long track titles.
   - **Weather:** Fixed city title and live temperature updates; removed the `Irena Verse` layout.
   - **App Dock & Scaling:** Fixed App Dock settings controls, removed the unused `Appearance` section, and synced scale adjustments across modules.
+
+## Inspirations & Credits
+
+Cadence takes design and feature inspiration from the following Rainmeter skins and visualizers:
+
+- **Irena** by **Connect-R** — Spring-coupled WaterWave physics, 3-stop gradient palette styling, `% of day elapsed` readout, and Recycle Bin status badge.
+- **Mond** by **Connect-R** — Glowing radial player scrubber, tracked location header, and `mond` weather icon pack.
+- **Robik** by **Connect-R** — Layered backdrop clock typography, brush-script weekday styling, pill divider, and `robik` weather icon pack.
+- **Inside Dream (1.0)** by **Nasirivand** — Center-mirrored spectrum bars, scrolling track title marquee, 4-day forecast strip, and hover-magnified dock.
+- **Monstercat Visualizer (2.0.2)** by **marcopixel** — Weighted FFT band smoothing, sharp bottom-up bars, dynamic genre/album-art coloring (`Chameleon.dll`), and compact player layout.
+- **Summit** by **ani** — Vertical hairline clock framing, uppercase greeting, `electroharmonix` layouts, monochrome dock tooltips, and `Summit Float` dock layout.
+- **Stereo-Optic (1.2019.09.02)** by **Eclectic Tech** — Pulsing radial-gradient spheres and joined stereo ray overlay concepts.
+- **Windows Media Player (2007–2013)** — Classic Scope oscilloscope line aesthetic for `VisualizerMode=4`.
