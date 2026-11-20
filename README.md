@@ -47,11 +47,14 @@ One-click presets coordinate Visualizer mode, overlays, palette, opacity, Clock,
 
 ## Live Browser Preview (`preview\`)
 
-Serve `preview\` over HTTP:
-```powershell
-python -m http.server 4173 --bind 127.0.0.1 --directory preview
-```
-Open `http://127.0.0.1:4173/` to test all visualizer modes, overlays, suite presets, palettes, Web Audio synth or local audio files, and export your configuration to `Variables.inc`.
+- **Live Hosted Preview:** https://cadence-itzthechallenger312as-projects.vercel.app (deployed from `preview/` on Vercel)
+- **Local HTTP Server:**
+  ```powershell
+  python -m http.server 4173 --bind 127.0.0.1 --directory preview
+  ```
+  Then open `http://127.0.0.1:4173/` in your browser.
+
+Test all 6 visualizer modes, 8 combinable overlays, 9 suite presets, 18 color palettes, Web Audio synth or local audio files, and export your configuration directly to `Variables.inc`.
 
 ## Changelog
 
