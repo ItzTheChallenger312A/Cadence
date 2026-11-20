@@ -52,3 +52,24 @@ Serve `preview\` over HTTP:
 python -m http.server 4173 --bind 127.0.0.1 --directory preview
 ```
 Open `http://127.0.0.1:4173/` to test all visualizer modes, overlays, suite presets, palettes, Web Audio synth or local audio files, and export your configuration to `Variables.inc`.
+
+## Changelog
+
+### v2.0.1
+- **Sidebar Height Hotfix:** Increased minimum `SettingHeight` to `690` in `MediaPlayer.ini`, `WavePhysics.ini`, `Player.ini`, and `Scope.ini` so `Close Settings` clears `Edit Variables.inc`.
+- **6 New Color-Themed Suite Presets:** Added **Warm Amber**, **Sakura Bloom**, **Jade Neon**, **Ice Blizzard**, **Lavender Town**, and **Midnight Nostalgia** (`3×3` preset grid in `General.ini` and the web preview).
+- **3×3 Overlay Layers (Mix & Match):** Replaced stacked overlay toggles with a compact `3×3` button grid (**Spheres**, **Stereo Rays**, **Peak Dots**, **Bass Aura**, **Particles**, **Shockwaves**, **Orbitals**, **Aurora Ribbon**, and **Clear All**) in both Rainmeter (`Visualizer.ini`, `DreamWave.lua`, `General.ini`) and the web preview.
+
+### v2.0.0
+- **Expanded WMP Scope (`Settings\Scope.ini`):** Moved WMP Scope controls to a dedicated settings page and added **Glow / Bloom**, **Trace Smoothing**, **Wave Speed**, **Phosphor Afterglow Trail**, **Edge Taper**, and **Dual-Beam Stereo Trace**.
+- **Radial Ring (`VisualizerMode=5`):** Added a 96-point symmetric circular spectrum ring sized from `SkinWidth` and `ScaleVisualizer` rather than `BarHeight`.
+- **Suite Presets:** Added **Studio Glass**, **WMP Retro**, and **Minimal Focus** presets in `General.ini` to switch Visualizer, Clock, Player, Weather, Dock, Palette, and Opacity together.
+- **Combinable Overlays:** Introduced **Pulsing Spheres** and **Joined Stereo Rays** as independent overlay layers.
+
+### v1.0.0
+- Initial release of the 5-part Cadence Rainmeter suite (`Visualizer`, `Clock`, `Player`, `Weather`, `Dock`), `.rmskin` packager, and live browser preview.
+- Post-initial fixes and additions:
+  - **Visualizer:** Added **WMP Scope (`VisualizerMode=4`)** with **Sharpness**, **Thickness**, and **Sensitivity** controls.
+  - **Music Player:** Fixed full-card elapsed/percentage formula output and added marquee scrolling for long track titles.
+  - **Weather:** Fixed city title and live temperature updates; removed the `Irena Verse` layout.
+  - **App Dock & Scaling:** Fixed App Dock settings controls, removed the unused `Appearance` section, and synced scale adjustments across modules.
